@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: resume-builder-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: resume_builder
+      MYSQL_USER: resumeuser
+      MYSQL_PASSWORD: resumepass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - resume-builder-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: resume-builder-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/resume_builder
+      SPRING_DATASOURCE_USERNAME: resumeuser
+      SPRING_DATASOURCE_PASSWORD: resumepass
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+    networks:
+      - resume-builder-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: resume-builder-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - resume-builder-network
+
+volumes:
+  mysql_data:
+
+networks:
+  resume-builder-network:
+    driver: bridge
